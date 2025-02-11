@@ -115,15 +115,49 @@ function varargout = PID_Arduino_CAE(varargin)
     k = 5;
     nit = 10000;
     while ~parar
+
+
+
+
+
+
         % Lectura del Dato por Puerto Serial
         variable = (fread(SerialP, 30, 'uchar'));
-        ini = find(variable == 73); % Busca el 'I' (Primer dato)
+
+        % Buscar inicio y fin de la temperatura
+        ini = find(variable == 73); % Busca el 'I'
+        fin = find(variable == 70); % Busca el 'F'
+
+
+        % Si no se encuentran los delimitadores, ignorar la iteración
+        if isempty(ini) || isempty(fin)
+            disp('Datos no válidos recibidos, esperando siguiente lectura...');
+            pause(0.1);
+            continue; % Salta a la siguiente iteración del loop
+        end
+
         ini = ini(1) + 1;
-        fin = find(variable == 70); % Busca el 'F' (último dato)
         fin = fin(find(fin > ini)) - 1;
-        fin = fin(1);
+
+        if isempty(fin)
+            disp('No se encontró el delimitador de fin.');
+            continue;
+        end
+
+
+
         tempC = char(variable(ini:fin))';
-        temp = str2num(tempC);
+        temp = str2double(tempC);
+        
+        if isnan(temp)
+            disp('Error en la conversión de temperatura.');
+            continue;
+        end
+
+        
+        %fin = fin(1);
+        %tempC = char(variable(ini:fin))';
+        %temp = str2num(tempC);
         
         % Lectura de la señal de control
         ini = find(variable == 67); % Busca el 'C' (Primer dato)
